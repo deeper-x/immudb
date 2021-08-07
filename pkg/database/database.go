@@ -70,7 +70,7 @@ type DB interface {
 	Scan(req *schema.ScanRequest) (*schema.Entries, error)
 	Close() error
 	GetOptions() *Options
-	UpdateReplication(asReplica bool, replicationOpts *ReplicationOptions)
+	AsReplica(asReplica bool)
 	IsReplica() bool
 	CompactIndex() error
 	VerifiableSQLGet(req *schema.VerifiableSQLGetRequest) (*schema.VerifiableSQLEntry, error)
@@ -851,16 +851,15 @@ func (d *db) GetOptions() *Options {
 	return d.options
 }
 
-func (d *db) UpdateReplication(asReplica bool, replicationOpts *ReplicationOptions) {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
+func (d *db) AsReplica(asReplica bool) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	if asReplica {
 		d.Logger.Warningf("Replication is a work-in-progress feature. Not ready for production use")
 	}
 
 	d.options.replica = asReplica
-	d.options.WithReplicationOptions(replicationOpts)
 }
 
 func (d *db) IsReplica() bool {
