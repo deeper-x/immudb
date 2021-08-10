@@ -106,6 +106,8 @@ type db struct {
 
 // OpenDB Opens an existing Database from disk
 func OpenDB(op *Options, systemDB DB, log logger.Logger) (DB, error) {
+	log.Infof("Opening database '%s' (replica = %v)...", op.dbName, op.replica)
+
 	var err error
 
 	dbi := &db{
@@ -123,7 +125,7 @@ func OpenDB(op *Options, systemDB DB, log logger.Logger) (DB, error) {
 
 	dbi.st, err = store.Open(dbDir, op.GetStoreOptions().WithLog(log))
 	if err != nil {
-		return nil, logErr(dbi.Logger, "Unable to open store: %s", err)
+		return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 	}
 
 	dbi.tx1 = dbi.st.NewTx()
@@ -179,7 +181,7 @@ func (d *db) initSQLEngine(systemDB DB) error {
 	dbDir := d.path()
 
 	if err == sql.ErrDatabaseDoesNotExist {
-		d.Logger.Infof("Migrating catalog from systemdb to %s...", dbDir)
+		d.Logger.Infof("Preparing catalog at '%s'...", dbDir)
 
 		var catalogSt *store.ImmuStore
 		if systemDB == nil {
@@ -201,11 +203,16 @@ func (d *db) initSQLEngine(systemDB DB) error {
 		}
 
 		err = sqlEngine.DumpCatalogTo(d.options.dbName, dbInstanceName, d.st)
-		if err != nil {
+		if err == sql.ErrDatabaseDoesNotExist {
+			_, _, err := d.sqlEngine.ExecPreparedStmts([]sql.SQLStmt{&sql.CreateDatabaseStmt{DB: dbInstanceName}}, nil, true)
+			if err != nil {
+				return logErr(d.Logger, "Unable to open database: %v", err)
+			}
+		} else if err != nil {
 			return err
 		}
 
-		d.Logger.Infof("Catalog successfully migrated from systemdb to %s", dbDir)
+		d.Logger.Infof("Catalog successfully prepared at %s", dbDir)
 
 		err = d.sqlEngine.EnsureCatalogReady(d.sqlInitCancel)
 		if err != nil {
@@ -237,6 +244,8 @@ func (d *db) reloadSQLCatalog() error {
 
 // NewDB Creates a new Database along with it's directories and files
 func NewDB(op *Options, systemDB DB, log logger.Logger) (DB, error) {
+	log.Infof("Creating database '%s' (replica = %v)...", op.dbName, op.replica)
+
 	var err error
 
 	dbi := &db{
@@ -257,7 +266,7 @@ func NewDB(op *Options, systemDB DB, log logger.Logger) (DB, error) {
 
 	dbi.st, err = store.Open(dbDir, op.GetStoreOptions().WithLog(log))
 	if err != nil {
-		return nil, logErr(dbi.Logger, "Unable to open store: %s", err)
+		return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 	}
 
 	dbi.tx1 = dbi.st.NewTx()
@@ -265,18 +274,18 @@ func NewDB(op *Options, systemDB DB, log logger.Logger) (DB, error) {
 
 	dbi.sqlEngine, err = sql.NewEngine(dbi.st, dbi.st, []byte{SQLPrefix})
 	if err != nil {
-		return nil, logErr(dbi.Logger, "Unable to open store: %s", err)
+		return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 	}
 
 	if !op.replica {
 		_, _, err = dbi.sqlEngine.ExecPreparedStmts([]sql.SQLStmt{&sql.CreateDatabaseStmt{DB: dbInstanceName}}, nil, true)
 		if err != nil {
-			return nil, logErr(dbi.Logger, "Unable to open store: %s", err)
+			return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 		}
 
 		err = dbi.sqlEngine.UseDatabase(dbInstanceName)
 		if err != nil {
-			return nil, logErr(dbi.Logger, "Unable to open store: %s", err)
+			return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 		}
 	} else {
 		dbi.Logger.Warningf("Replication is a work-in-progress feature. Not ready for production use")

@@ -108,7 +108,7 @@ func (s *ImmuServer) updateRemoteUUID(remoteStorage remotestorage.Storage) error
 	return remoteStorage.Put(ctx, IDENTIFIER_FNAME, filepath.Join(s.Options.Dir, IDENTIFIER_FNAME))
 }
 
-func (s *ImmuServer) storeOptionsForDb(name string, remoteStorage remotestorage.Storage) *store.Options {
+func (s *ImmuServer) storeOptionsForDB(name string, remoteStorage remotestorage.Storage) *store.Options {
 	opts := *s.Options.StoreOptions
 
 	if remoteStorage != nil {
