@@ -92,11 +92,11 @@ func (cl *commandline) database(cmd *cobra.Command) {
 		Args: cobra.ExactArgs(1),
 	}
 	cc.Flags().BoolP("replica", "r", false, "set database as a replica")
+	cc.Flags().String("master-database", "", "set master database to be replicated")
 	cc.Flags().String("master-address", "127.0.0.1", "set master address")
 	cc.Flags().Uint32("master-port", 3322, "set master port")
-	cc.Flags().String("master-database", "", "set master database to be replicated")
-	cc.Flags().String("follower-username", "", "set username used for replication")
-	cc.Flags().String("follower-password", "", "set password used for replication")
+	cc.Flags().String("replica-username", "", "set username used for replication")
+	cc.Flags().String("replica-password", "", "set password used for replication")
 
 	cu := &cobra.Command{
 		Use:               "update",
@@ -124,11 +124,11 @@ func (cl *commandline) database(cmd *cobra.Command) {
 		Args: cobra.ExactArgs(1),
 	}
 	cu.Flags().BoolP("replica", "r", false, "set database as a replica")
+	cu.Flags().String("master-database", "", "set master database to be replicated")
 	cu.Flags().String("master-address", "127.0.0.1", "set master address")
 	cu.Flags().Uint32("master-port", 3322, "set master port")
-	cu.Flags().String("master-database", "", "set master database to be replicated")
-	cu.Flags().String("follower-username", "", "set username used for replication")
-	cu.Flags().String("follower-password", "", "set password used for replication")
+	cu.Flags().String("replica-username", "", "set username used for replication")
+	cu.Flags().String("replica-password", "", "set password used for replication")
 
 	ccu := &cobra.Command{
 		Use:               "use command",
@@ -198,6 +198,11 @@ func prepareDatabaseSettings(db string, flags *pflag.FlagSet) (*schema.DatabaseS
 		return &schema.DatabaseSettings{DatabaseName: db}, nil
 	}
 
+	masterDatabase, err := flags.GetString("master-database")
+	if err != nil {
+		return nil, err
+	}
+
 	masterAddress, err := flags.GetString("master-address")
 	if err != nil {
 		return nil, err
@@ -208,28 +213,23 @@ func prepareDatabaseSettings(db string, flags *pflag.FlagSet) (*schema.DatabaseS
 		return nil, err
 	}
 
-	masterDatabase, err := flags.GetString("master-database")
+	replicaUsername, err := flags.GetString("replica-username")
 	if err != nil {
 		return nil, err
 	}
 
-	followerUsr, err := flags.GetString("follower-username")
-	if err != nil {
-		return nil, err
-	}
-
-	followerPwd, err := flags.GetString("follower-username")
+	replicaPassword, err := flags.GetString("replica-username")
 	if err != nil {
 		return nil, err
 	}
 
 	return &schema.DatabaseSettings{
-		DatabaseName: db,
-		Replica:      isReplica,
-		SrcAddress:   masterAddress,
-		SrcPort:      masterPort,
-		SrcDatabase:  masterDatabase,
-		FollowerUsr:  followerUsr,
-		FollowerPwd:  followerPwd,
+		DatabaseName:    db,
+		Replica:         isReplica,
+		MasterDatabase:  masterDatabase,
+		MasterAddress:   masterAddress,
+		MasterPort:      masterPort,
+		ReplicaUsername: replicaUsername,
+		ReplicaPassword: replicaPassword,
 	}, nil
 }

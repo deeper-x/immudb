@@ -235,11 +235,11 @@
 | ----- | ---- | ----- | ----------- |
 | databaseName | [string](#string) |  |  |
 | replica | [bool](#bool) |  |  |
-| srcDatabase | [string](#string) |  |  |
-| srcAddress | [string](#string) |  |  |
-| srcPort | [uint32](#uint32) |  |  |
-| followerUsr | [string](#string) |  |  |
-| followerPwd | [string](#string) |  |  |
+| masterDatabase | [string](#string) |  |  |
+| masterAddress | [string](#string) |  |  |
+| masterPort | [uint32](#uint32) |  |  |
+| replicaUsername | [string](#string) |  |  |
+| replicaPassword | [string](#string) |  |  |
 
 
 
